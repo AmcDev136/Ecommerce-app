@@ -35,7 +35,6 @@ export const authOptions: NextAuthOptions = {
 
     pages: {
         signIn: "/login",
-        error: "/login",
     },
 
     providers: [
@@ -44,23 +43,22 @@ export const authOptions: NextAuthOptions = {
             name: "credentials",
             credentials: {
                 email: { label: "Email", type: "email"},
-                password: { laberl: "Password", type: "password"},
+                password: { label: "Password", type: "password"},
             },
 
             async authorize(credentials) {
-                // Si no hay email o password, no autorizamos
-                if(!credentials?.email || !credentials.password) {
-                    throw new Error("Email y password son requeridos");
-                }
+                try {
+                    // Si no hay email o password, no autorizamos
+                    if(!credentials?.email || !credentials.password) {
+                        return null;
+                    }
 
                 // Buscamos usuario en BD
                 const user = await prisma.user.findUnique({
                     where: { email: credentials.email },
                 });
 
-                if(!user) {
-                    throw new Error("Credenciales inválidas");
-                }
+                if(!user) return null;
 
                 // Comparamos password con hash en BD
                 const passMatch = await bcrypt.compare(
@@ -68,9 +66,7 @@ export const authOptions: NextAuthOptions = {
                     user.password
                 );
 
-                if(!passMatch) {
-                    throw new Error("Credenciales inválidas");
-                }
+                if(!passMatch) return null;
 
                 // Devolvemos el objeto usuario (NextAuth lo guardará en JWT)
                 return {
@@ -79,9 +75,13 @@ export const authOptions: NextAuthOptions = {
                     name: user.name,
                     role: user.role,
                 };
-            },
-        }),
-    ],
+            } catch (error) {
+                console.error("Auth error:", error);
+                return null;
+            }
+        },
+    }),
+],
 
     callbacks: {
         async jwt({ token, user }) { //jwt() se ejecuta cuando se crea o actualiza el token

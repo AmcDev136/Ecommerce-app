@@ -1,7 +1,10 @@
 "use client"; // Componente que corre en navegador
 
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { useSession } from "next-auth/react";
+import toast from "react-hot-toast";
 
 // Tipo local para productos 
 interface Product {
@@ -31,6 +34,8 @@ export default function ProductsPage() {
     const [totalPages, setTotalPages] = useState(1);
     const [search, setSearch] = useState("");
     const [searchInput, setSearchInput] = useState("");
+    const router = useRouter();
+    const { data: session } = useSession();
 
     // Cargar productos desde la Api cada que cambia de página
     useEffect(() => {
@@ -64,6 +69,22 @@ export default function ProductsPage() {
         setPage(1); // Reiniciar a la primera página al buscar
         setSearch(searchInput);
     };
+
+    const addToCart = async (productId: string) => {
+        if (!session) {
+            router.push("/login");
+            return;
+        }
+        try {
+            await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/cart`, {
+                productId,
+                quantity: 1,
+            });
+            toast.success("Producto agregado al carrito");
+        } catch (e: any) {
+            toast.error(e.response?.data?.error || "Error al agregar");
+        }
+    }
 
     return (
         <div className="min-h-screen bg-gray-50">
@@ -143,7 +164,9 @@ export default function ProductsPage() {
                                             Stock: {product.stock}
                                         </span>
                                     </div>
-                                    <button className="mt-3 w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm">
+                                    <button 
+                                        onClick={() => addToCart(product.id)}
+                                        className="mt-3 w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm">
                                         Agregar al carrito
                                     </button>
                                 </div>

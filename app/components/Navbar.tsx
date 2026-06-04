@@ -2,10 +2,28 @@
 
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
+import { useEffect, useState } from "react";
+import axios from "axios";
 
 export default function Navbar() {
     const { data: session, status } = useSession();
     const loading = status === "loading";
+    const [cartCount, setCartCount] = useState(0);
+
+    useEffect(() => {
+        if (session) {
+            axios
+                .get(`${process.env.NEXT_PUBLIC_API_URL}/cart`)
+                .then(({ data }) => {
+                    const count = data.data?.items?.reduce(
+                        (sum: number, item: any) => sum + item.quantity,
+                        0
+                    ) ?? 0;
+                    setCartCount(count);
+                })
+                .catch(() => {});
+        }
+    }, [session]);
 
     return (
         <nav className="bg-white shadow-sm border-b">
@@ -25,9 +43,14 @@ export default function Navbar() {
                     </Link>
                     <Link
                     href="/cart"
-                    className="text-gray-600 hover:text-blue-600 transition-colors"
+                    className="relative hover:text-blue-600"
                     >
                         Carrito
+                        {cartCount > 0 && (
+                            <span className="absolute -top-2 -right-3 bg-blue-600 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+                                {cartCount}
+                            </span>
+                        )}
                     </Link>
                 </div>
 

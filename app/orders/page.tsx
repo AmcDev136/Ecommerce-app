@@ -31,7 +31,6 @@ function StatusBadge({ status }: { status: string }) {
         DELIVERED: "Entregado",
         CANCELLED: "Cancelado",
     };
-
     return (
         <span className={`px-3 py-1 rounded-full text-xs font-medium ${styles[status] ?? "bg-gray-100 text-gray-700"}`}>
             {labels[status] ?? status}
@@ -44,30 +43,45 @@ export default function OrdersPage() {
     const router = useRouter();
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        if (status !== "authenticated") return;
+        if (status === "loading") return;
+
+        if (status === "unauthenticated") {
+            router.push("/login");
+            return;
+        }
 
         const fetchOrders = async () => {
             try {
+                setLoading(true);
                 const { data } = await axios.get(
                     `${process.env.NEXT_PUBLIC_API_URL}/orders`
                 );
-                setOrders(data.data);
-            } catch {
-                // Error silencioso
+                setOrders(data.data ?? []);
+            } catch (err) {
+                setError("Error al cargar los pedidos");
             } finally {
                 setLoading(false);
             }
         };
 
         fetchOrders();
-    }, [status]);
+    }, [status, router]);
 
-    if (loading) {
+    if (status === "loading" || loading) {
         return (
             <div className="flex justify-center items-center min-h-screen">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="flex justify-center items-center min-h-screen">
+                <p className="text-red-500">{error}</p>
             </div>
         );
     }

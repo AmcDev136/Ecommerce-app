@@ -135,7 +135,7 @@ export const orderService = {
                 items: {
                     include: {
                         product: {
-                            select: { ide: true, name: true, imageUrl: true },
+                            select: { id: true, name: true, imageUrl: true },
                         },
                     },
                 },

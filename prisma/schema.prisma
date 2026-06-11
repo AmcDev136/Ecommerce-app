@@ -46,9 +46,12 @@ model Product {
   stock       Int      @default(0)
   imageUrl    String?
   isActive    Boolean  @default(true)
+  categoryId  String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  category   Category?        @relation(fields: [categoryId], references: [id])
+  images     ProductImage[]
   cartItems  CartItem[]
   orderItems OrderItem[]
 
@@ -107,4 +110,30 @@ model OrderItem {
   product Product @relation(fields: [productId], references: [id])
 
   @@map("order_items")
+}
+
+model Category {
+  id          String    @id @default(cuid())
+  name        String    @unique
+  slug        String    @unique  // URL amigable
+  description String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  products Product[]
+
+  @@map("categories")
+}
+
+model ProductImage {
+  id        String   @id @default(cuid())
+  productId String
+  url       String
+  order     Int      @default(0) // Orden de aparicion
+  isPrimary Boolean  @default(false) // Imagen principal
+  createdAt DateTime  @default(now())
+
+  product    Product          @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("products_images")
 }

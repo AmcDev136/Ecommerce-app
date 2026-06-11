@@ -91,6 +91,15 @@ export default function Navbar() {
                                 </span>
                             )}
 
+                            {/* Dashboard del admin */}
+                            {session.user.role === "ADMIN" && (
+                                <Link
+                                href="/admin"
+                                className="text-purple-600 hover:text-purple-700 transition-colors text-sm font-medium">
+                                    Dashboard
+                                </Link>
+                            )}
+
                             {/* Pedidos */}
                             <Link
                             href="/orders"

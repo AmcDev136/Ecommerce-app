@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
             // Si ES admin, usamos lo que venga en la query (o undefined para ver todos)
             isActive: isAdmin
                 ? (searchParams.get("isActive") ?? undefined)
-                : true,
+                : "true",
         };
 
         // Validamos y transformamos los query params

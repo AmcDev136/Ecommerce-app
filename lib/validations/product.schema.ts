@@ -3,7 +3,7 @@ import { z } from 'zod';
 export const createProductSchema = z.object({
     name: z
         .string()
-        .min(3, "El nombre del producto debe tener al menos 3 caracteres")
+        .min(2, "El nombre del producto debe tener al menos 2 caracteres")
         .max(100, "El nombre del producto no puede tener más de 100 caracteres"),
     description: z
         .string()
@@ -12,7 +12,7 @@ export const createProductSchema = z.object({
     price: z
         .number()
         .positive("El precio del producto debe ser un número positivo")
-        .multipleOf(0.01, "El precio del producto solo puede tener dos decimales"),
+        .multipleOf(0.01, "El precio del producto solo puede tener 2 decimales"),
     stock: z
         .number()
         .int("El stock del producto debe ser un número entero")
@@ -20,8 +20,11 @@ export const createProductSchema = z.object({
         .default(0),
     imageUrl: z
         .string()
-        .url("La URL de la imagen del producto debe ser una URL válida")
-        .optional(),
+        .url("La URL de la imagen no es válida")
+        .optional()
+        .or(z.literal("")),
+    categoryId: z.string().optional(),
+    isActive: z.boolean().optional(),
 });
 
 // Para actualizar, todos los campos son opcionales
@@ -46,6 +49,13 @@ export const productQuerySchema = z.object({
         .string()
         .optional()
         .transform((val) => (val ? parseFloat(val) : undefined)),
+    categoryId: z.string().optional(),
+    isActive: z.string().optional()
+        .transform((val) => {
+            if (val === "true") return true;
+            if (val === "false") return false;
+            return undefined;
+        }),
 });
 
 export type CreateProductInput = z.infer<typeof createProductSchema>;

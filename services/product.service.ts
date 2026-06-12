@@ -3,32 +3,35 @@ import { CreateProductInput, UpdateProductInput, ProductQueryInput } from "@/lib
 import { PaginatedResponse } from "@/types";
 import { Product } from "@prisma/client";
 
+export type ProductWithCategory = Product & {
+    category: { id: string; name: string; slug: string } | null;
+};
+
 export const productService = {
 
     // Obtener listado de paginacion y filtros
     async getAll(query: ProductQueryInput): Promise<PaginatedResponse<Product>> {
-        const { page, limit, search, minPrice, maxPrice } = query;
+        const { page, limit, search, minPrice, maxPrice, categoryId, isActive } = query;
         const skip = (page - 1) * limit; // Cuantos registros saltar
 
         // Construir filtros dinámicos
         const where = {
-            isActive: true, // solo productos activos
+            ...(isActive !!== undefined && { isActive }),
             ...(search && {
-                // si hay busqueda, filtramos por nombre o desc
                 OR: [
-                    { name: { contains: search, mode: "insensitive" as const}},
-                    { description: { contains: search, mode: "insensitive" as const}},
+                    { name: { contains: search, mode: "insensitive" as const } },
+                    { description: { contains: search, mode:"insensitive" as const } },
                 ],
             }),
-
+            ...(categoryId && { categoryId }),
             ...(minPrice !== undefined || maxPrice !== undefined
                 ? {
                     price: {
-                        ...(minPrice !== undefined && { gte: minPrice }), // mayor o igual a minPrice
-                        ...(maxPrice !== undefined && { lte: maxPrice }), // menor o igual a maxPrice
+                        ...(minPrice !== undefined && { gte: minPrice }),
+                        ...(maxPrice !== undefined && { lte: maxPrice }),
                     },
                 }
-                : {}),
+            : {}),
         };
 
         // Ejecutamos dos queries en paralelo
@@ -37,7 +40,12 @@ export const productService = {
                 where,
                 skip,
                 take: limit,
-                orderBy: { createdAt: "desc" }, // mas recientes primero
+                orderBy: { createdAt: "desc" },
+                include: {
+                    category: {
+                        select: { id: true, name: true, slug: true },
+                    },
+                },
             }),
             prisma.product.count({ where }), // Total para calcular paginas
         ]);
@@ -51,11 +59,25 @@ export const productService = {
     },
 
     // Obtener producto por ID
-    async getById(id: string): Promise<Product | null> {
+    async getById(id: string): Promise<ProductWithCategory | null> {
         return prisma.product.findFirst({
-            where: {
-            id,
-            isActive: true,
+            where: { id, isActive: true },
+            include: {
+                category: {
+                    select: { id: true, name: true, slug: true },
+                },
+            },
+        });
+    },
+
+    // Incluir productos inactivos
+    async getByAdmin(id: string): Promise<ProductWithCategory | null>{
+        return prisma.product.findUnique({
+            where: { id },
+            include: {
+                category: {
+                    select: { id: true, name: true, slug: true },
+                },
             },
         });
     },
@@ -68,7 +90,9 @@ export const productService = {
             description: data.description,
             price: data.price,
             stock: data.stock ?? 0,
-            imageUrl: data.imageUrl,
+            imageUrl: data.imageUrl || null,
+            categoryId: data.categoryId || null,
+            isActive: data.isActive ?? true,
             },
         });
     },
@@ -84,7 +108,11 @@ export const productService = {
 
         return prisma.product.update({
             where: { id },
-            data,
+            data: {
+                ...data,
+                imageUrl: data.imageUrl || null,
+                categoryId: data.categoryId || null,
+            },
         });
     },
 
@@ -99,6 +127,19 @@ export const productService = {
         await prisma.product.update({
             where: { id },
             data: { isActive: false },
+        });
+    },
+
+    // Actualizar solo el stock
+    async updateStock(id: string, stock: number): Promise<Product> {
+        const product = await prisma.product.findUnique({ where: { id } });
+        if (!product) throw new Error("Producto no encontrado");
+
+        if (stock < 0) throw new Error("El stock no puede ser negativo");
+
+        return prisma.product.update({
+            where: { id },
+            data: { stock },
         });
     },
 };

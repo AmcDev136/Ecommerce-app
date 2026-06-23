@@ -26,8 +26,8 @@ const config: Config = {
       },
 
       fontFamily: {
-        sans:  ["var(--font-geist-sans)", "system-ui", "sans-serif"],
-        mono:  ["var(--font-geist-mono)", "monospace"],
+        sans:  ["-apple-system", "BlinkMacSystemFont", "Segoe UI", "system-ui", "sans-serif"],
+        mono:  ["Consolas", "Monaco", "Courier New", "monospace"],
       },
 
       // Gradiantes

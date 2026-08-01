@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import axios from "axios";
 import toast from "react-hot-toast";
 import Link from "next/link";
@@ -154,6 +154,39 @@ export default function ProductDetailPage({
                         <div  className="glass-strong rounded-2xl p-5">
                             <p className="text-xs font-mono text-ts-gray mb-1">Precio</p>
                             <p className="text-4xl font-bold font-mono text-gradient">${parseFloat(product.price).toFixed(2)}</p>
+                        </div>
+
+                        {/* Botón agregar al carrito */}
+                        <div className="flex items-center gap-3">
+                            {/* Selector cantidad */}
+                            <div className="flex items-center glass rounded-xl border border-ts-border overflow-hidden">
+                                <button
+                                    onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                                    disabled={isOutOfStock}
+                                    className="px-4 py-3 text-gray-800 dark:text-ts-gray hover:bg-gray-100 dark:hover:bg-white/5 transition-all text-lg font-bold disabled:opacity-40 disabled:cursor-not-allowed"
+                                >-</button>
+                                <span className="px-4 py-3 font-mono font-bold text-sm border-x border-gray-300 dark:border-ts-border min-w-[48px] text-center text-gray-900 dark:text-ts-white">
+                                    {quantity}
+                                </span>
+                                <button
+                                    onClick={() => setQuantity((q) => Math.min(product.stock, q + 1))}
+                                    disabled={isOutOfStock}
+                                    className="px-4 py-3 text-gray-800 dark:text-ts-gray hover:bg-gray-100 dark:hover:bg-white/5 transition-all text-lg font-bold disabled:opacity-40 disabled:cursor-not-allowed"
+                                >+</button>
+                            </div>
+
+                            <motion.button
+                                whileHover={{ scale: isOutOfStock ? 1 : 1.02 }}
+                                whileTap={{ scale: isOutOfStock ? 1 : 0.97 }}
+                                onClick={handleAddToCart}
+                                disabled={adding || isOutOfStock}
+                                className="flex-1 py-3 rounded-xl font-semibold text-sm bg-ts-gradient text-black hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                            >
+                                {adding && (
+                                    <span className="h-4 w-4 rounded-full border-2 border-black border-t-transparent animate-spin" />
+                                )}
+                                {isOutOfStock ? "Sin stock" : adding ? "Agregando..." : "Agregar al carrito"}
+                            </motion.button>
                         </div>
 
                         {/* Descripcion */}

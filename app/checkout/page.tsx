@@ -3,8 +3,10 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
 import axios from "axios";
 import toast from "react-hot-toast";
+import Link from "next/link";
 
 interface CartItem {
     id: string;
@@ -17,53 +19,42 @@ interface CartItem {
     };
 }
 
-interface Cart {
-    items: CartItem[];
-}
-
 export default function CheckoutPage() {
     const { data: session, status } = useSession();
     const router = useRouter();
-    const [cart, setCart] = useState<Cart | null>(null);
+    const [items, setItems] = useState<CartItem[]>([])
     const [loading, setLoading] = useState(true);
     const [placing, setPlacing] = useState(false);
 
     // Redirigir si no hay sesión
     useEffect(() => {
-        if (status === "unauthenticated") {
-            router.push("/login");
-        }
-    }, [status, router]);
-
-    // Cargar carrito
-    useEffect(() => {
-        if (status !== "authenticated") return;
+        if (status === "loading") return;
+        if (status === "unauthenticated") { router.push("/login"); return; }
 
         const fetchCart = async () => {
             try {
                 const { data } = await axios.get(
                     `${process.env.NEXT_PUBLIC_API_URL}/cart`
                 );
-                setCart(data.data);
-
-                if (!data.data || data.data.items.length === 0) {
+                const cartItems = data.data?.items ?? [];
+                if (cartItems.length === 0) {
                     toast.error("Tu carrito está vacío");
                     router.push("/products");
+                    return;
                 }
+                setItems(cartItems);
             } catch {
-                toast.error("Error al cargar el carrito");
                 router.push("/cart");
             } finally {
                 setLoading(false);
             }
         };
-
         fetchCart();
     }, [status, router]);
 
-    const total = cart?.items.reduce((sum, item) => {
-        return sum + parseFloat(item.product.price) * item.quantity;
-    }, 0) ?? 0;
+    const total = items.reduce((sum, item) =>
+        sum + parseFloat(item.product.price) * item.quantity, 0
+    );
 
     const handlePlaceOrder = async () => {
         setPlacing(true);
@@ -71,102 +62,108 @@ export default function CheckoutPage() {
             const { data } = await axios.post(
                 `${process.env.NEXT_PUBLIC_API_URL}/orders`
             );
-
-            toast.success("¡Pedido creado correctamente!");
+            toast.success("¡Pedido confirmado");
             router.push(`/orders/${data.data.id}`);
-
         } catch (error) {
             if (axios.isAxiosError(error)) {
                 toast.error(error.response?.data?.error ?? "Error al crear el pedido");
-            } else {
-                toast.error("Error al crear el pedido");
             }
         } finally {
             setPlacing(false);
         }
     };
-
-    if (loading || status === "loading") {
+    if (status === "loading" || loading) {
         return (
-            <div className="flex justify-center items-center min-h-screen">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="animate-spin rounded-full h-10 w-10 border-2 border-ts-cyan border-t-transparent" />
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-gray-50">
-            <div className="max-w-3xl mx-auto px-4 py-8">
-                <h1 className="text-3xl font-bold text-gray-900 mb-8">
-                    Confirmar pedido
-                </h1>
+        <div className="min-h-screen">
+            <div className="max-w-3xl mx-auto px-6 py-12">
 
-                {/* Resumen de items */}
-                <div className="bg-white rounded-xl shadow-sm -sm overflow-hidden mb-6">
-                    <div className="p-6 border-b">
-                        <h2 className="font-semibold text-gray-900">
-                            Resumen ({cart?.items.length} productos)
+                {/* Header */}
+                <motion.div
+                    initial={{ opacity: 0, y: 16 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mb-10"
+                >
+                    <Link href="/cart" className="text-xs font-mono text-ts-gray hover:text-ts-cyan transition-colors flex items-center gap-1 mb-4">
+                        ← Volver al carrito
+                    </Link>
+                    <span className="text-xs font-mono text-ts-cyan">/ checkout</span>
+                    <h1 className="text-4xl font-bold mt-2">Confirmar pedido</h1>
+                </motion.div>
+
+                {/* Items */}
+                <motion.div
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                className="glass-strong rounded-2xl overflow-hidden mb-6">
+                    <div className="p-5 border-b border-ts-border">
+                        <h2 className="font-semibold">
+                            Productos ({items.length})
                         </h2>
                     </div>
-
-                    <div className="divide-y">
-                        {cart?.items.map((item) => (
+                    <div className="divide-y divide-ts-border">
+                        {items.map((item) => (
                             <div key={item.id} className="p-4 flex items-center gap-4">
-                                {/* Imagen */}
-                                <div className="h-16 w-16 bg-gray-100 rounded-lg flex-shrink-0 overflow-hidden">
+                                <div className="h-14 w-14 rounded-xl flex-shrink-0 overflow-hidden" style={{ backgroundColor: "#f8f9fa" }}>
                                     {item.product.imageUrl ? (
-                                        <img src={item.product.imageUrl}
+                                        <img
+                                        src={item.product.imageUrl}
                                         alt={item.product.name}
-                                        className="h-full w-full object-cover"/>
+                                        className="h-full w-full object-contain p-1.5" />
                                     ) : (
-                                        <div className="h-full w-full flex items-center justify-center text-gray-400 text-xs">
-                                            Sin imagen
-                                        </div>
+                                        <div className="h-full w-full flex items-center justify-center text-ts-gray"> 📦</div>
                                     )}
                                 </div>
-
-                                {/* Info */}
-                                <div className="flex-1">
-                                    <p className="font-medium text-gray-900">
-                                        {item.product.name}
-                                    </p>
-                                    <p className="text-sm text-gray-500">
-                                        Cantidad: {item.quantity}
+                                <div className="flex-1 min-w-0">
+                                    <p className="font-medium text-sm truncate">{item.product.name}</p>
+                                    <p className="text-xs text-ts-gray mt-0.5">
+                                        {item.quantity} × ${parseFloat(item.product.price).toFixed(2)}
                                     </p>
                                 </div>
-
-                                {/* Subtotal */}
-                                <p className="font-semibold text-gray-900">
+                                <p className="font-mono font-bold text-sm">
                                     ${(parseFloat(item.product.price) * item.quantity).toFixed(2)}
                                 </p>
                             </div>
                         ))}
                     </div>
-                </div>
+                </motion.div>
 
-                {/* Total y botón */}
-                <div className="bg-white rounded-xl shadow-sm p-6">
+                <motion.div
+                    initial={{ opacity: 0, y: 16 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                    className="glass-strong rounded-2xl p-6"
+                >
                     <div className="flex justify-between items-center mb-6">
-                        <span className="text-xl font-semibold text-gray-900"> Total</span>
-                        <span className="text-2xl font-bold text-blue-600">
+                        <span className="text-lg font-semibold">Total a pagar</span>
+                        <span className="text-3xl font-bold font-mono text-gradient">
                             ${total.toFixed(2)}
                         </span>
                     </div>
 
-                    <button 
+                    <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
                         onClick={handlePlaceOrder}
                         disabled={placing}
-                        className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 font-semibold text-lg">
-                            {placing ? "Procesando pedido..." : "Confirmar pedido"}
-                    </button>
-
-                    <button
-                        onClick={() => router.push("/cart")}
-                        className="w-full mt-3 text-gray-500 hover:text-gray-700 transition-colors text-sm"
+                        className="w-full py-3.5 rounded-xl bg-ts-gradient text-black font-bold text-base hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
                     >
-                        Volver al carrito
-                    </button>
-                </div>
+                        {placing && (
+                            <span className="h-4 w-4 rounded-full border-2 border-black border-t-transparent animate-spin" />
+                            )}
+                        {placing ? "Procesando..." : "Confirmar pedido"}
+                    </motion.button>
+                    <p className="text-center text-xs text-ts-gray mt-4 font-mono">
+                        Al confirmar aceptas los términos de compra de Techstack
+                    </p>
+                </motion.div>
             </div>
         </div>
     );

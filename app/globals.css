@@ -120,6 +120,26 @@ body {
 
 /* Seleccion de texto */
 ::selection {
-  background: rgba(0, 242, 254, 0.2);
-  color: var(--cyan);
+    background: rgba(0, 242, 254, 0.2);
+    color: var(--cyan);
+}
+
+/* Inputs - Legibles en modo claro y oscuro */
+input, textarea, select {
+    color: #1A1A2E;
+}
+
+.dark input, .dark textarea, .dark select {
+    color: #EDEDED;
+}
+
+/* Textos generales en claro */
+:root:not(.dark) p,
+:root:not(.dark) span,
+:root:not(.dark) h1,
+:root:not(.dark) h2,
+:root:not(.dark) h3,
+:root:not(.dark) h4,
+:root:not(.dark) label {
+    color: inherit;
 }

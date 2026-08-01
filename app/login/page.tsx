@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Suspense } from "react";
+import Image from "next/image";
+import { motion } from "framer-motion";
 
 function LoginForm() {
     const router = useRouter();
@@ -33,7 +34,7 @@ function LoginForm() {
             }
             router.push("/products");
             router.refresh();
-        } catch (err) {
+        } catch {
             setError("Error al iniciar sesión");
         } finally {
             setLoading(false);
@@ -41,82 +42,122 @@ function LoginForm() {
     };
 
     return (
-        <div className="bg-white rounded-xl shadow-sm p-8 w-full max-w-md">
-            <h1 className="text-2xl font-bold text-gray-900 mb-6">
-                Iniciar sesión
-            </h1>
+        <div className="min-h-screen flex items-center justify-center px-4 relative overflow-hidden">
+            <div className="absolute top-1/4 left-1/4 w-64 h-64 rounded-full bg-ts-cyan/10 blur-[100px] -z-10" />
+            <div className="absolute bottom-1/4 right-1/4 w-64 h-64 rounded-full bg-ts-purple/10 blur-[100px] -z-10" />
 
-            {/* Mensaje de registro exitoso */}
-            {registered && (
-                <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-4 text-sm">
-                    ¡Cuenta creada correctamente! Ya puedes iniciar sesión.
+            <motion.div
+                initial={{ opacity: 0, y: 24 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                className="w-full max-w-md"
+            >
+                {/* Card */}
+                <div className="glass-strong rounded-3xl p-8">
+
+                    {/* Logo y titulo */}
+                    <div className="flex flex-col items-center mb-8">
+                        <Image 
+                        src="/Logo-v2.png"
+                        alt="Techstack"
+                        width={56}
+                        height={56}
+                        className="rounded-2xl mb-4"
+                        />
+                        <h1 className="text-2xl font-bold">Bienvenido de vuelta</h1>
+                        <p className="text-ts-gray text-sm mt-1">
+                            Inicia sesión en tu cuenta
+                        </p>
+                    </div>
+
+                    {/* Mensaje registro exitoso */}
+                    {registered && (
+                        <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: "auto" }}
+                            className="mb-4 px-4 py-3 rounded-xl bg-ts-cyan/10 border border-ts-cyan/20 text-ts-cyan text-sm text-center"
+                        >
+                            ¡Cuenta creada! Ya pedes iniciar sesión.
+                        </motion.div>
+                    )}
+
+                    {/* Error */}
+                    {error && (
+                        <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: "auto" }}
+                            className="mb-4 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm text-center"
+                        >
+                            {error}
+                        </motion.div>
+                    )}
+
+                    {/* Formulario */}
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        <div>
+                            <label className="block text-sm font-medium text-ts-gray mb-1.5">
+                                Email
+                            </label>
+                            <input type="email"
+                            required
+                            value={formData.email}
+                            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                            placeholder="tu@email.com"
+                            className="w-full glass rounded-xl px-4 py-2.5 text-sm text-gray-900 dark:text-ts-white placeholder:text-ts-gray focus:outline-none focus:border-ts-cyan/40 transition-all"
+                            />
+                        </div>
+
+
+                        <div>
+                            <label className="block text-sm font-medium text-ts-gray mb-1.5">
+                                Contraseña
+                            </label>
+                            <input type="password"
+                            required
+                            value={formData.password}
+                            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                            placeholder="••••••••"
+                            className="w-full glass rounded-xl px-4 py-2.5 text-sm text-gray-900 dark:text-ts-white placeholder:text-ts-gray focus:outline-none focus:border-ts-cyan/40 transition-all"
+                            />
+                        </div>
+
+                        <motion.button
+                            whileTap={{ scale: 0.98 }}
+                            type="submit"
+                            disabled={loading}
+                            className="w-full py-2.5 rounded-xl font-semibold text-sm bg-ts-gradient text-black hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-2"
+                        >
+                            {loading && (
+                                <span className="h-4 w-4 rounded-full border-2 border-black border-t-transparent animate-spin" />
+                            )}
+                            {loading ? "Iniciado sesión..." : "Iniciar sesión"}
+                        </motion.button>
+                    </form>
+
+                    {/* Footer */}
+                    <p className="mt-6 text-center text-sm text-ts-gray">
+                        ¿No tienes cuenta?{" "}
+                        <Link href="/register" className="text-ts-cyan hover:underline font-medium">
+                        Regístrate gratis
+                        </Link>
+                    </p>
                 </div>
-            )}
 
-            {error && (
-                <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg mb-4 text-sm">
-                    {error}
-                </div>
-            )}
-
-            <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Email
-                    </label>
-                    <input
-                        type="email"
-                        required
-                        value={formData.email}
-                        onChange={(e) =>
-                        setFormData({ ...formData, email: e.target.value })
-                        }
-                        className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="tu@email.com"
-                    />
-                </div>
-
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Contraseña
-                    </label>
-                    <input
-                        type="password"
-                        required
-                        value={formData.password}
-                        onChange={(e) =>
-                        setFormData({ ...formData, password: e.target.value })
-                        }
-                        className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="••••••••"
-                    />
-                </div>
-
-                <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 font-medium"
-                >
-                    {loading ? "Iniciando sesión..." : "Iniciar sesión"}
-                </button>
-            </form>
-
-            <p className="mt-4 text-center text-sm text-gray-600">
-                ¿No tienes cuenta?{" "}
-                <Link href="/register" className="text-blue-600 hover:underline">
-                    Regístrate
-                </Link>
-            </p>
+                {/* Eslogan */}
+                <p className="text-center text-xs text-ts-gray font-mono mt-6">
+                    Puro rendimiento. Cero fricción.
+                </p>
+            </motion.div>
         </div>
     );
 }
 
 export default function LoginPage() {
     return (
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
-            <Suspense fallback={<div>Cargando...</div>}>
-                <LoginForm />
-            </Suspense>
-        </div>
+        <Suspense fallback={<div className="min-h-screen flex items-center justify-center">
+            <div className="animate-spin rounded-full h-10 w-10 border-2 border-ts-cyan border-t-transparent" />
+            </div>}>
+            <LoginForm />
+        </Suspense>
     );
 }
